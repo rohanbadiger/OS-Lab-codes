@@ -1,0 +1,159 @@
+#include <stdio.h> // standard input-output library
+#define MAX 100    // Maximum number of processes
+typedef struct
+{
+    int process_id;      // Unique identifier for the process
+    int burst_time;      // Time required by the process for execution
+    int waiting_time;    // Total time the process has been in the queue waiting to be executed
+    int turnaround_time; // Total time from submission to completion of the process
+    int priority;        // Priority of the process (for Priority Scheduling)
+} Process;
+void calculate_fcfs(Process processes[], int n)
+{
+    processes[0].waiting_time = 0; // First process waits 0
+    for (int i = 1; i < n; i++)
+        processes[i].waiting_time = processes[i - 1].waiting_time + processes[i - 1].burst_time;
+    for (int i = 0; i < n; i++)
+        processes[i].turnaround_time = processes[i].waiting_time + processes[i].burst_time;
+}
+void calculate_sjf(Process processes[], int n)
+{
+    // Sort processes by burst time
+    for (int i = 0; i < n - 1; i++)
+    {
+        for (int j = 0; j < n - i - 1; j++)
+        {
+            if (processes[j].burst_time > processes[j + 1].burst_time)
+            {
+                Process temp = processes[j];
+                processes[j] = processes[j + 1];
+                processes[j + 1] = temp;
+            }
+        }
+    }
+    processes[0].waiting_time = 0; // First process waits 0
+    for (int i = 1; i < n; i++)
+        processes[i].waiting_time = processes[i - 1].waiting_time + processes[i - 1].burst_time;
+    for (int i = 0; i < n; i++)
+        processes[i].turnaround_time = processes[i].waiting_time + processes[i].burst_time;
+}
+void calculate_priority(Process processes[], int n)
+{
+    // Sort processes by priority
+    for (int i = 0; i < n - 1; i++)
+    {
+        for (int j = 0; j < n - i - 1; j++)
+        {
+            if (processes[j].priority > processes[j + 1].priority)
+            {
+                Process temp = processes[j];
+                processes[j] = processes[j + 1];
+                processes[j + 1] = temp;
+            }
+        }
+    }
+    processes[0].waiting_time = 0; // First process waits 0
+    for (int i = 1; i < n; i++)
+        processes[i].waiting_time = processes[i - 1].waiting_time + processes[i - 1].burst_time;
+
+    for (int i = 0; i < n; i++)
+        processes[i].turnaround_time = processes[i].waiting_time + processes[i].burst_time;
+}
+void calculate_round_robin(Process processes[], int n, int quantum)
+{
+    int remaining_burst[MAX];
+    for (int i = 0; i < n; i++)
+    {
+        remaining_burst[i] = processes[i].burst_time;
+        processes[i].waiting_time = 0;
+    }
+    int t = 0; // Current time
+    while (1)
+    {
+        int done = 1; // Check if all processes are done
+        for (int i = 0; i < n; i++)
+        {
+            if (remaining_burst[i] > 0)
+            {
+                done = 0; // Not done
+                if (remaining_burst[i] > quantum)
+                {
+                    t += quantum;
+                    remaining_burst[i] -= quantum;
+                }
+                else
+                {
+                    t += remaining_burst[i];
+                    processes[i].turnaround_time = t;
+                    processes[i].waiting_time = processes[i].turnaround_time -
+                                                processes[i].burst_time;
+                    remaining_burst[i] = 0;
+                }
+            }
+        }
+        if (done)
+            break; // All processes are done
+    }
+}
+void print_processes(Process processes[], int n)
+{
+    printf("\nProcess ID\tBurst Time\tWaiting Time\tTurnaround Time\n");
+    for (int i = 0; i < n; i++)
+        printf("%d\t\t%d\t\t%d\t\t%d\n", processes[i].process_id, processes[i].burst_time,
+               processes[i].waiting_time, processes[i].turnaround_time);
+}
+int main()
+{
+    Process processes[MAX];
+    int n;
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+    for (int i = 0; i < n; i++)
+    {
+        processes[i].process_id = i + 1; // Process IDs start from 1
+        printf("Enter burst time for process %d: ", processes[i].process_id);
+        scanf("%d", &processes[i].burst_time);
+        processes[i].priority = 0; // Initialize priority
+    }
+    // FCFS
+    calculate_fcfs(processes, n);
+    printf("\nFCFS Scheduling:");
+    print_processes(processes, n);
+    // Re-initialize process data for SJF calculation
+    for (int i = 0; i < n; i++)
+    {
+        processes[i].waiting_time = 0;
+        processes[i].turnaround_time = 0;
+    }
+    // SJF
+    calculate_sjf(processes, n);
+    printf("\nSJF Scheduling:");
+    print_processes(processes, n);
+    // Re-initialize process data for Priority calculation
+    for (int i = 0; i < n; i++)
+    {
+        processes[i].waiting_time = 0;
+        processes[i].turnaround_time = 0;
+        printf("Enter priority for process %d (lower number = higher priority): ",
+               processes[i].process_id);
+        scanf("%d", &processes[i].priority);
+    }
+    // Priority
+    calculate_priority(processes, n);
+    printf("\nPriority Scheduling:");
+    print_processes(processes, n);
+    // Re-initialize process data for Round Robin calculation
+    for (int i = 0; i < n; i++)
+    {
+        processes[i].waiting_time = 0;
+        processes[i].turnaround_time = 0;
+    }
+    int quantum;
+    printf("\nEnter time quantum for Round Robin: ");
+    scanf("%d", &quantum);
+    // Round Robin
+    calculate_round_robin(processes, n, quantum);
+    printf("\nRound Robin Scheduling:");
+    print_processes(processes, n);
+    return 0;
+}
